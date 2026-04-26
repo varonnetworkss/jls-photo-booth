@@ -84,10 +84,43 @@
       .photo-strip { width:100mm; height:auto; margin:0 auto; box-shadow:none; border-radius:0; border:0; }
       @page { size:A4 portrait; margin:8mm; }
     }
+    .app.shooting-mode {
+  grid-template-columns: 1fr;
+}
+
+.app.shooting-mode .result-panel {
+  display: none;
+}
+
+.app.result-mode {
+  grid-template-columns: 1fr;
+}
+
+.app.result-mode .camera-panel {
+  display: none;
+}
+
+.app.result-mode .result-panel {
+  max-width: 980px;
+  width: min(980px, calc(100vw - 32px));
+  margin: 0 auto;
+}
+
+.frame-select {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.frame-select button {
+  min-height: 44px;
+  border-radius: 999px;
+  font-size: 14px;
+}
   </style>
 </head>
 <body>
-  <div class="app">
+ <div class="app shooting-mode" id="app">
     <section class="camera-panel">
       <div class="top-title">
         <h1>정상네컷</h1>
