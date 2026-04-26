@@ -100,6 +100,7 @@
         <div id="cameraStatus" class="status">촬영 버튼을 눌러 시작</div>
       </div>
       <div class="controls">
+        <button onclick="goFullscreen()">전체화면</button>
         <button id="startBtn" type="button">촬영 시작</button>
         <button id="retakeBtn" class="secondary" type="button">다시 찍기</button>
         <button id="saveBtn" class="secondary" type="button" disabled>저장</button>
@@ -469,7 +470,14 @@
     retakeBtn.addEventListener("click", resetPhotos);
     saveBtn.addEventListener("click", saveImage);
     printBtn.addEventListener("click", () => window.print());
-
+function goFullscreen() {
+  const el = document.documentElement;
+  if (el.requestFullscreen) {
+    el.requestFullscreen();
+  } else if (el.webkitRequestFullscreen) {
+    el.webkitRequestFullscreen();
+  }
+}
     drawBaseFrame(stripCtx, true); updateThumbs(); tryLoadDefaultFrame();
   </script>
 </body>
