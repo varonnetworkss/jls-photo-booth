@@ -409,7 +409,7 @@
         <button type="button" onclick="goFullscreen()">전체화면</button>
         <button id="startBtn" type="button">촬영 시작</button>
         <button id="retakeBtn" class="secondary" type="button">초기화</button>
-        <button id="saveBtn" class="secondary" type="button" disabled>저장</button>
+        <button id="goResultBtn" class="secondary" type="button" disabled>결과 보기</button>
       </div>
     </section>
 
@@ -418,6 +418,7 @@
         <h2>완성 미리보기</h2>
         <div class="top-actions">
           <button type="button" class="secondary small-btn" onclick="backToCamera()">이전으로</button>
+          <button id="saveBtn" type="button" class="small-btn" disabled>저장 링크 열기</button>
           <span id="uploadStatus" class="upload-badge">QR 대기 중</span>
         </div>
       </div>
@@ -444,7 +445,7 @@
             <a id="photoLink" href="#" target="_blank" rel="noopener">사진 열기</a>
           </div>
         </div>
-        <div class="guide">사진 먼저 넣고 프레임을 마지막에 덮어서 스티커가 사진 위에 보이게 처리함.</div>
+        <div class="guide">프레임은 사진 위에 덮여서 스티커가 살아남고, 좌표는 실제 투명칸 기준으로 맞춤.</div>
       </div>
     </section>
   </div>
@@ -460,6 +461,7 @@
     const startBtn = document.getElementById("startBtn");
     const retakeBtn = document.getElementById("retakeBtn");
     const saveBtn = document.getElementById("saveBtn");
+    const goResultBtn = document.getElementById("goResultBtn");
     const countdownEl = document.getElementById("countdown");
     const flashEl = document.getElementById("flash");
     const cameraStatus = document.getElementById("cameraStatus");
@@ -478,50 +480,52 @@
     const CANVAS_W = 1200;
     const CANVAS_H = 1600;
 
+    // 실제 업로드된 1200x1600 프레임의 투명칸 기준 좌표
+    // 순서: 위왼쪽 → 위오른쪽 → 아래왼쪽 → 아래오른쪽
     const FRAME_CONFIGS = {
       "frame-yellow": {
         file: "frame-yellow.png",
         slots: [
-          { x: 216, y: 337, w: 379, h: 493 },
-          { x: 613, y: 337, w: 379, h: 493 },
-          { x: 216, y: 846, w: 379, h: 493 },
-          { x: 613, y: 846, w: 379, h: 493 }
+          { x: 215, y: 335, w: 380, h: 490 },
+          { x: 611, y: 335, w: 379, h: 490 },
+          { x: 217, y: 842, w: 379, h: 488 },
+          { x: 612, y: 842, w: 378, h: 488 }
         ]
       },
       "frame-green": {
         file: "frame-green.png",
         slots: [
-          { x: 76, y: 103, w: 505, h: 598 },
-          { x: 620, y: 103, w: 505, h: 598 },
-          { x: 76, y: 752, w: 505, h: 598 },
-          { x: 620, y: 752, w: 505, h: 598 }
+          { x: 82, y: 136, w: 496, h: 574 },
+          { x: 624, y: 136, w: 494, h: 573 },
+          { x: 82, y: 753, w: 496, h: 573 },
+          { x: 625, y: 752, w: 493, h: 574 }
         ]
       },
       "frame-pink-bear": {
         file: "frame-pink-bear.png",
         slots: [
-          { x: 147, y: 429, w: 434, h: 497 },
-          { x: 627, y: 88, w: 450, h: 536 },
-          { x: 147, y: 1005, w: 434, h: 530 },
-          { x: 627, y: 683, w: 450, h: 530 }
+          { x: 626, y: 91, w: 443, h: 535 },
+          { x: 146, y: 406, w: 443, h: 535 },
+          { x: 626, y: 681, w: 444, h: 534 },
+          { x: 145, y: 993, w: 437, h: 534 }
         ]
       },
       "frame-blue-flower": {
         file: "frame-blue-flower.png",
         slots: [
-          { x: 80, y: 86, w: 503, h: 618 },
-          { x: 621, y: 86, w: 503, h: 618 },
-          { x: 80, y: 754, w: 503, h: 618 },
-          { x: 621, y: 754, w: 503, h: 618 }
+          { x: 85, y: 97, w: 494, h: 685 },
+          { x: 627, y: 97, w: 496, h: 683 },
+          { x: 84, y: 822, w: 495, h: 685 },
+          { x: 624, y: 822, w: 496, h: 681 }
         ]
       },
       "frame-cute-jls": {
         file: "frame-cute-jls.png",
         slots: [
-          { x: 80, y: 42, w: 455, h: 512 },
-          { x: 547, y: 42, w: 555, h: 512 },
-          { x: 80, y: 585, w: 455, h: 512 },
-          { x: 547, y: 585, w: 555, h: 512 }
+          { x: 95, y: 55, w: 491, h: 522 },
+          { x: 613, y: 55, w: 489, h: 523 },
+          { x: 95, y: 621, w: 491, h: 541 },
+          { x: 613, y: 621, w: 489, h: 541 }
         ]
       }
     };
@@ -532,6 +536,7 @@
     let isShooting = false;
     let streamStarted = false;
     let uploadTimer = null;
+    let latestPhotoUrl = "";
 
     function wait(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
@@ -591,20 +596,6 @@
       }
     }
 
-    function roundRect(ctx, x, y, w, h, r, fill, stroke) {
-      if (w < 2 * r) r = w / 2;
-      if (h < 2 * r) r = h / 2;
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.arcTo(x + w, y, x + w, y + h, r);
-      ctx.arcTo(x + w, y + h, x, y + h, r);
-      ctx.arcTo(x, y + h, x, y, r);
-      ctx.arcTo(x, y, x + w, y, r);
-      ctx.closePath();
-      if (fill) ctx.fill();
-      if (stroke) ctx.stroke();
-    }
-
     function drawCoverImage(ctx, img, x, y, w, h, mirrored = false) {
       const iw = img.videoWidth || img.width;
       const ih = img.videoHeight || img.height;
@@ -656,25 +647,26 @@
     async function renderStrip() {
       stripCtx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
-      // 1. 배경 먼저
+      // 사진 없는 부분도 깔끔하게 흰색으로 유지
       stripCtx.fillStyle = "#ffffff";
       stripCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
       const slots = FRAME_CONFIGS[selectedFrame].slots;
 
-      // 2. 사진 먼저 넣기
+      // 1. 사진 먼저 배치
       for (let i = 0; i < photos.length; i++) {
         const img = await loadImage(photos[i]);
         if (!img) continue;
         const slot = slots[i];
         stripCtx.save();
-        roundRect(stripCtx, slot.x, slot.y, slot.w, slot.h, 8, false, false);
+        stripCtx.beginPath();
+        stripCtx.rect(slot.x, slot.y, slot.w, slot.h);
         stripCtx.clip();
         drawCoverImage(stripCtx, img, slot.x, slot.y, slot.w, slot.h, true);
         stripCtx.restore();
       }
 
-      // 3. 프레임 마지막에 덮기: 스티커/장식이 사진 위에 살아남음
+      // 2. 프레임 마지막에 덮기: 스티커/테이프/말풍선이 사진 위에 살아남음
       if (frameImage) {
         stripCtx.drawImage(frameImage, 0, 0, CANVAS_W, CANVAS_H);
       } else {
@@ -741,21 +733,26 @@
         const blob = await canvasToBlob(stripCanvas, "image/png", 0.95);
         const url = await uploadToCloudinary(blob, `${selectedFrame}-${Date.now()}.png`);
 
+        latestPhotoUrl = url;
         photoQr.src = makeQrUrl(url);
         photoLink.href = url;
         photoLink.textContent = "사진 열기 / 저장";
         qrCard.classList.add("show");
+        saveBtn.disabled = false;
         uploadStatus.textContent = "QR 생성 완료";
       } catch (err) {
         console.error(err);
         uploadStatus.textContent = "업로드 실패";
         qrCard.classList.remove("show");
+        saveBtn.disabled = true;
       }
     }
 
     function scheduleReupload() {
       if (!photos.length) return;
       if (uploadTimer) clearTimeout(uploadTimer);
+      latestPhotoUrl = "";
+      saveBtn.disabled = true;
       uploadStatus.textContent = "QR 다시 생성 중...";
       uploadTimer = setTimeout(uploadResult, 350);
     }
@@ -776,8 +773,10 @@
 
       isShooting = true;
       startBtn.disabled = true;
+      goResultBtn.disabled = true;
       saveBtn.disabled = true;
       qrCard.classList.remove("show");
+      latestPhotoUrl = "";
       uploadStatus.textContent = "QR 대기 중";
       photos = [];
       await renderStrip();
@@ -803,7 +802,8 @@
       cameraStatus.textContent = "촬영 완료";
       isShooting = false;
       startBtn.disabled = false;
-      saveBtn.disabled = false;
+      goResultBtn.disabled = false;
+      saveBtn.disabled = true;
 
       await renderStrip();
       showResultScreen();
@@ -813,21 +813,30 @@
     async function resetAll() {
       photos = [];
       qrCard.classList.remove("show");
+      latestPhotoUrl = "";
       uploadStatus.textContent = "QR 대기 중";
       saveBtn.disabled = true;
+      goResultBtn.disabled = true;
       await renderStrip();
       backToCamera();
       cameraStatus.textContent = "촬영 버튼을 눌러 시작";
     }
 
-    async function saveImage() {
-      await renderStrip();
-      const link = document.createElement("a");
-      const now = new Date();
-      const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}-${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}`;
-      link.download = `${selectedFrame}-${stamp}.png`;
-      link.href = stripCanvas.toDataURL("image/png");
-      link.click();
+    async function openSaveLink() {
+      if (!photos.length) {
+        alert("먼저 촬영해야 해.");
+        return;
+      }
+
+      if (!latestPhotoUrl) {
+        await uploadResult();
+      }
+
+      if (latestPhotoUrl) {
+        window.open(latestPhotoUrl, "_blank", "noopener");
+      } else {
+        alert("아직 저장 링크가 안 만들어졌어. QR 생성이 끝난 뒤 다시 눌러줘.");
+      }
     }
 
     if ("serviceWorker" in navigator) {
@@ -844,7 +853,8 @@
 
     startBtn.addEventListener("click", startShooting);
     retakeBtn.addEventListener("click", resetAll);
-    saveBtn.addEventListener("click", saveImage);
+    saveBtn.addEventListener("click", openSaveLink);
+    goResultBtn.addEventListener("click", showResultScreen);
 
     loadFrame(selectedFrame);
   </script>
