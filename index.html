@@ -27,6 +27,39 @@
       min-height: 0; border-radius: 28px; background: rgba(255,255,255,0.92);
       box-shadow: 0 16px 40px rgba(15,23,42,.14); overflow: hidden;
     }
+    .app.shooting-mode {
+  grid-template-columns: 1fr;
+  height: 100dvh;
+  padding: 10px;
+}
+
+.app.shooting-mode .result-panel {
+  display: none;
+}
+
+.app.shooting-mode .camera-panel {
+  height: calc(100dvh - 20px);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 12px;
+}
+
+.app.shooting-mode .camera-wrap {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.app.shooting-mode .thumbs {
+  display: none;
+}
+
+.app.shooting-mode .top-title h1 {
+  font-size: clamp(34px, 7vw, 56px);
+}
+
+.app.shooting-mode .controls {
+  grid-template-columns: 1fr 1fr;
+}
     .camera-panel { display: grid; grid-template-rows: auto 1fr auto auto; padding: 18px; gap: 14px; }
     .top-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .top-title h1 { margin: 0; color: #111; font-size: clamp(34px,5vw,56px); line-height: 1; letter-spacing: -1px; font-weight: 1000; }
@@ -143,10 +176,13 @@
     </section>
 
     <section class="result-panel">
-      <div class="result-top">
-        <h2>완성 미리보기</h2>
-        <div id="uploadStatus" class="upload-badge">QR 대기 중</div>
-      </div>
+     <div class="result-top">
+  <h2>완성 미리보기</h2>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <button type="button" class="secondary" onclick="backToCamera()" style="min-height:40px; padding:8px 14px;">이전으로</button>
+    <div id="uploadStatus" class="upload-badge">QR 대기 중</div>
+  </div>
+</div>
       <div class="strip-wrap">
         <div class="photo-strip">
           <canvas id="stripCanvas" width="1200" height="1600"></canvas>
@@ -317,10 +353,14 @@
       });
 
       // 현재 촬영 중인 칸에는 라이브 카메라를 넣음
-      const slot = photoSlots[liveSlotIndex] || photoSlots[3];
-      videoCtx.save(); roundRect(videoCtx, slot.x, slot.y, slot.w, slot.h, 22, false, false); videoCtx.clip();
-      drawCoverImage(videoCtx, video, slot.x, slot.y, slot.w, slot.h, true);
-      videoCtx.restore();
+if (liveSlotIndex >= 0) {
+  const slot = photoSlots[liveSlotIndex] || photoSlots[3];
+  videoCtx.save();
+  roundRect(videoCtx, slot.x, slot.y, slot.w, slot.h, 22, false, false);
+  videoCtx.clip();
+  drawCoverImage(videoCtx, video, slot.x, slot.y, slot.w, slot.h, true);
+  videoCtx.restore();
+}
 
       if (frameImage) videoCtx.drawImage(frameImage, 0, 0, CANVAS_W, CANVAS_H);
     }
@@ -462,10 +502,11 @@
         await wait(680);
       }
 
-      liveSlotIndex = 3;
-      await wait(500);
-      const videoBlob = await stopCompositeRecording();
-      stopCompositeLoop();
+    liveSlotIndex = -1;
+await wait(3000);
+
+const videoBlob = await stopCompositeRecording();
+stopCompositeLoop();
 
       await renderStrip();
       saveBtn.disabled = false; printBtn.disabled = false; startBtn.disabled = false; isShooting = false;
