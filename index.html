@@ -469,7 +469,14 @@ if (liveSlotIndex >= 0) {
         const photoBlob = await canvasToBlob(stripCanvas, "image/png", 0.95);
         const stamp = Date.now();
         const photoPromise = uploadToCloudinary(photoBlob, `jls-photo-${stamp}.png`);
-        const videoPromise = videoBlob ? uploadToCloudinary(videoBlob, `jls-frame-video-${stamp}.webm`).catch(() => null) : Promise.resolve(null);
+       const videoPromise = videoBlob
+  ? uploadToCloudinary(videoBlob, `jls-frame-video-${stamp}.webm`)
+      .then(url => url
+        .replace("/upload/", "/upload/f_mp4/")
+        .replace(/\.[^/.]+$/, ".mp4")
+      )
+      .catch(() => null)
+  : Promise.resolve(null);
         const [photoUrl, videoUrl] = await Promise.all([photoPromise, videoPromise]);
         showQr(photoUrl, videoUrl);
         uploadStatus.textContent = "QR 생성 완료";
@@ -503,7 +510,7 @@ if (liveSlotIndex >= 0) {
       }
 
     liveSlotIndex = -1;
-await wait(3000);
+await wait(5000);
 
 const videoBlob = await stopCompositeRecording();
 stopCompositeLoop();
