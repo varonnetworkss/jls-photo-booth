@@ -51,7 +51,7 @@
     .shooting-screen {
       grid-template-rows: auto 1fr auto;
       gap: 10px;
-      background: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.92);
       border-radius: 26px;
       padding: 12px;
       box-shadow: 0 14px 36px rgba(15,23,42,.12);
@@ -192,7 +192,7 @@
     }
 
     .result-screen {
-      grid-template-rows: auto 1fr auto;
+      grid-template-rows: auto auto 1fr auto;
       gap: 10px;
       background: rgba(255,255,255,0.92);
       border-radius: 26px;
@@ -239,6 +239,29 @@
       font-size: 12px;
       font-weight: 900;
       white-space: nowrap;
+    }
+
+    .frame-select {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+
+    .frame-select button {
+      min-height: 38px;
+      border-radius: 999px;
+      padding: 7px 8px;
+      font-size: 12px;
+      box-shadow: none;
+      background: #f1f1f1;
+      color: #111;
+      border: 2px solid transparent;
+    }
+
+    .frame-select button.active-frame {
+      background: #111;
+      color: white;
+      border-color: #111;
     }
 
     .strip-wrap {
@@ -324,6 +347,9 @@
         width: min(92vw, 560px);
         height: auto;
       }
+      .frame-select {
+        grid-template-columns: repeat(3, 1fr);
+      }
     }
 
     @media print {
@@ -337,7 +363,7 @@
         padding: 0;
         background: white;
       }
-      .shooting-screen, .result-top, .bottom-area {
+      .shooting-screen, .result-top, .frame-select, .bottom-area {
         display: none !important;
       }
       .result-screen {
@@ -396,6 +422,14 @@
         </div>
       </div>
 
+      <div class="frame-select" id="frameSelect">
+        <button type="button" data-frame="frame-yellow" class="active-frame">노랑</button>
+        <button type="button" data-frame="frame-green">초록</button>
+        <button type="button" data-frame="frame-pink-bear">핑크곰</button>
+        <button type="button" data-frame="frame-blue-flower">하늘꽃</button>
+        <button type="button" data-frame="frame-cute-jls">CUTE</button>
+      </div>
+
       <div class="strip-wrap">
         <div class="photo-strip">
           <canvas id="stripCanvas" width="1200" height="1600"></canvas>
@@ -410,7 +444,7 @@
             <a id="photoLink" href="#" target="_blank" rel="noopener">사진 열기</a>
           </div>
         </div>
-        <div class="guide">QR은 사진만 저장됨. 영상 기능은 태블릿 멈춤 방지를 위해 제거함.</div>
+        <div class="guide">프레임을 고르면 미리보기와 QR 사진이 다시 생성됨.</div>
       </div>
     </section>
   </div>
@@ -439,21 +473,65 @@
     const qrCard = document.getElementById("qrCard");
     const photoQr = document.getElementById("photoQr");
     const photoLink = document.getElementById("photoLink");
+    const frameSelect = document.getElementById("frameSelect");
 
     const CANVAS_W = 1200;
     const CANVAS_H = 1600;
 
+    const FRAME_CONFIGS = {
+      "frame-yellow": {
+        file: "frame-yellow.png",
+        slots: [
+          { x: 216, y: 337, w: 379, h: 493 },
+          { x: 613, y: 337, w: 379, h: 493 },
+          { x: 216, y: 846, w: 379, h: 493 },
+          { x: 613, y: 846, w: 379, h: 493 }
+        ]
+      },
+      "frame-green": {
+        file: "frame-green.png",
+        slots: [
+          { x: 76, y: 103, w: 505, h: 598 },
+          { x: 620, y: 103, w: 505, h: 598 },
+          { x: 76, y: 752, w: 505, h: 598 },
+          { x: 620, y: 752, w: 505, h: 598 }
+        ]
+      },
+      "frame-pink-bear": {
+        file: "frame-pink-bear.png",
+        slots: [
+          { x: 147, y: 429, w: 434, h: 497 },
+          { x: 627, y: 88, w: 450, h: 536 },
+          { x: 147, y: 1005, w: 434, h: 530 },
+          { x: 627, y: 683, w: 450, h: 530 }
+        ]
+      },
+      "frame-blue-flower": {
+        file: "frame-blue-flower.png",
+        slots: [
+          { x: 80, y: 86, w: 503, h: 618 },
+          { x: 621, y: 86, w: 503, h: 618 },
+          { x: 80, y: 754, w: 503, h: 618 },
+          { x: 621, y: 754, w: 503, h: 618 }
+        ]
+      },
+      "frame-cute-jls": {
+        file: "frame-cute-jls.png",
+        slots: [
+          { x: 80, y: 42, w: 455, h: 512 },
+          { x: 547, y: 42, w: 555, h: 512 },
+          { x: 80, y: 585, w: 455, h: 512 },
+          { x: 547, y: 585, w: 555, h: 512 }
+        ]
+      }
+    };
+
+    let selectedFrame = "frame-yellow";
     let photos = [];
     let frameImage = null;
     let isShooting = false;
     let streamStarted = false;
-
-    const photoSlots = [
-      { x: 105, y: 250, w: 460, h: 440 },
-      { x: 635, y: 250, w: 460, h: 440 },
-      { x: 105, y: 760, w: 460, h: 440 },
-      { x: 635, y: 760, w: 460, h: 440 }
-    ];
+    let uploadTimer = null;
 
     function wait(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
@@ -476,42 +554,42 @@
     }
 
     async function initCamera() {
-  try {
-    cameraStatus.textContent = "카메라 연결 중...";
+      try {
+        cameraStatus.textContent = "카메라 연결 중...";
 
-    if (video.srcObject) {
-      streamStarted = true;
-      await video.play();
-      cameraStatus.textContent = "카메라 준비 완료";
-      return;
+        if (video.srcObject) {
+          streamStarted = true;
+          await video.play();
+          cameraStatus.textContent = "카메라 준비 완료";
+          return;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: "user"
+          },
+          audio: false
+        });
+
+        video.srcObject = stream;
+
+        await new Promise(resolve => {
+          video.onloadedmetadata = resolve;
+        });
+
+        await video.play();
+
+        streamStarted = true;
+        cameraStatus.textContent = "카메라 준비 완료";
+      } catch (err) {
+        console.error(err);
+        streamStarted = false;
+        cameraStatus.textContent = "카메라 실행 실패";
+        alert("카메라가 안 켜졌어. 브라우저 카메라 권한을 허용하고 새로고침해줘.");
+      }
     }
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        facingMode: "user"
-      },
-      audio: false
-    });
-
-    video.srcObject = stream;
-
-    await new Promise(resolve => {
-      video.onloadedmetadata = resolve;
-    });
-
-    await video.play();
-
-    streamStarted = true;
-    cameraStatus.textContent = "카메라 준비 완료";
-  } catch (err) {
-    console.error(err);
-    streamStarted = false;
-    cameraStatus.textContent = "카메라 실행 실패";
-    alert("카메라가 안 켜졌어. 브라우저 카메라 권한을 허용하고 새로고침해줘.");
-  }
-}
 
     function roundRect(ctx, x, y, w, h, r, fill, stroke) {
       if (w < 2 * r) r = w / 2;
@@ -549,54 +627,6 @@
       ctx.restore();
     }
 
-    function drawBaseFrame() {
-      stripCtx.clearRect(0, 0, CANVAS_W, CANVAS_H);
-
-      stripCtx.fillStyle = "#ffffff";
-      stripCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-      const bg = stripCtx.createLinearGradient(0, 0, CANVAS_W, CANVAS_H);
-      bg.addColorStop(0, "#fff8d7");
-      bg.addColorStop(1, "#ffffff");
-      stripCtx.fillStyle = bg;
-      stripCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-      stripCtx.fillStyle = "rgba(250,204,21,.34)";
-      for (let y = 30; y < CANVAS_H; y += 78) {
-        for (let x = 36; x < CANVAS_W; x += 78) {
-          stripCtx.beginPath();
-          stripCtx.arc(x, y, 10, 0, Math.PI * 2);
-          stripCtx.fill();
-        }
-      }
-
-      stripCtx.textAlign = "center";
-      stripCtx.fillStyle = "#111";
-      stripCtx.font = "1000 78px Arial";
-      stripCtx.fillText("정상네컷", CANVAS_W / 2, 120);
-
-      stripCtx.font = "800 30px Arial";
-      stripCtx.fillText("JLS MARKET DAY", CANVAS_W / 2, 165);
-
-      photoSlots.forEach((slot, idx) => {
-        stripCtx.save();
-        stripCtx.lineWidth = 18;
-        stripCtx.strokeStyle = idx % 2 === 0 ? "#2f8f2f" : "#00a6d6";
-        stripCtx.fillStyle = "#fff";
-        roundRect(stripCtx, slot.x - 12, slot.y - 12, slot.w + 24, slot.h + 24, 34, true, false);
-        roundRect(stripCtx, slot.x, slot.y, slot.w, slot.h, 24, false, true);
-        stripCtx.restore();
-      });
-
-      stripCtx.fillStyle = "#111";
-      stripCtx.font = "900 42px Arial";
-      stripCtx.fillText("SEO SUWON JLS", CANVAS_W / 2, 1478);
-
-      stripCtx.fillStyle = "#64748b";
-      stripCtx.font = "700 26px Arial";
-      stripCtx.fillText(new Date().toLocaleDateString("ko-KR"), CANVAS_W / 2, 1522);
-    }
-
     function loadImage(src) {
       return new Promise(resolve => {
         const img = new Image();
@@ -606,22 +636,45 @@
       });
     }
 
-    async function renderStrip() {
-      drawBaseFrame();
+    async function loadFrame(frameKey) {
+      const config = FRAME_CONFIGS[frameKey];
+      frameImage = await loadImage(`./${config.file}?v=${Date.now()}`);
+      await renderStrip();
+    }
 
-      for (let i = 0; i < photos.length; i++) {
-        const img = await loadImage(photos[i]);
-        if (!img) continue;
-        const slot = photoSlots[i];
-        stripCtx.save();
-        roundRect(stripCtx, slot.x, slot.y, slot.w, slot.h, 22, false, false);
-        stripCtx.clip();
-        drawCoverImage(stripCtx, img, slot.x, slot.y, slot.w, slot.h, true);
-        stripCtx.restore();
-      }
+    function drawFallbackFrame() {
+      stripCtx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+      stripCtx.fillStyle = "#ffffff";
+      stripCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+      stripCtx.fillStyle = "#fff8d7";
+      stripCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+      stripCtx.textAlign = "center";
+      stripCtx.fillStyle = "#111";
+      stripCtx.font = "1000 78px Arial";
+      stripCtx.fillText("정상네컷", CANVAS_W / 2, 120);
+      stripCtx.font = "800 30px Arial";
+      stripCtx.fillText("JLS MARKET DAY", CANVAS_W / 2, 165);
+    }
+
+    async function renderStrip() {
+      stripCtx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
       if (frameImage) {
         stripCtx.drawImage(frameImage, 0, 0, CANVAS_W, CANVAS_H);
+      } else {
+        drawFallbackFrame();
+      }
+
+      const slots = FRAME_CONFIGS[selectedFrame].slots;
+      for (let i = 0; i < photos.length; i++) {
+        const img = await loadImage(photos[i]);
+        if (!img) continue;
+        const slot = slots[i];
+        stripCtx.save();
+        roundRect(stripCtx, slot.x, slot.y, slot.w, slot.h, 10, false, false);
+        stripCtx.clip();
+        drawCoverImage(stripCtx, img, slot.x, slot.y, slot.w, slot.h, true);
+        stripCtx.restore();
       }
     }
 
@@ -644,6 +697,8 @@
     function capturePhoto() {
       const vw = video.videoWidth;
       const vh = video.videoHeight;
+      if (!vw || !vh) return null;
+
       captureCanvas.width = vw;
       captureCanvas.height = vh;
       captureCtx.drawImage(video, 0, 0, vw, vh);
@@ -677,9 +732,10 @@
     async function uploadResult() {
       try {
         uploadStatus.textContent = "업로드 중...";
+        qrCard.classList.remove("show");
         await renderStrip();
         const blob = await canvasToBlob(stripCanvas, "image/png", 0.95);
-        const url = await uploadToCloudinary(blob, `jungsang-4cut-${Date.now()}.png`);
+        const url = await uploadToCloudinary(blob, `${selectedFrame}-${Date.now()}.png`);
 
         photoQr.src = makeQrUrl(url);
         photoLink.href = url;
@@ -687,9 +743,26 @@
         qrCard.classList.add("show");
         uploadStatus.textContent = "QR 생성 완료";
       } catch (err) {
+        console.error(err);
         uploadStatus.textContent = "업로드 실패";
         qrCard.classList.remove("show");
       }
+    }
+
+    function scheduleReupload() {
+      if (!photos.length) return;
+      if (uploadTimer) clearTimeout(uploadTimer);
+      uploadStatus.textContent = "QR 다시 생성 중...";
+      uploadTimer = setTimeout(uploadResult, 350);
+    }
+
+    async function selectFrame(frameKey) {
+      selectedFrame = frameKey;
+      [...frameSelect.querySelectorAll("button")].forEach(btn => {
+        btn.classList.toggle("active-frame", btn.dataset.frame === frameKey);
+      });
+      await loadFrame(frameKey);
+      scheduleReupload();
     }
 
     async function startShooting() {
@@ -709,7 +782,15 @@
         cameraStatus.textContent = `${i + 1}번째 컷 준비`;
         await showCountdown();
         fireFlash();
-        photos.push(capturePhoto());
+        const shot = capturePhoto();
+        if (!shot) {
+          isShooting = false;
+          startBtn.disabled = false;
+          cameraStatus.textContent = "카메라 준비 실패";
+          alert("카메라 화면이 아직 준비 안 됐어. 다시 눌러줘.");
+          return;
+        }
+        photos.push(shot);
         await renderStrip();
         cameraStatus.textContent = `${i + 1}번째 컷 완료`;
         await wait(620);
@@ -740,22 +821,9 @@
       const link = document.createElement("a");
       const now = new Date();
       const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}-${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}`;
-      link.download = `jungsang-4cut-${stamp}.png`;
+      link.download = `${selectedFrame}-${stamp}.png`;
       link.href = stripCanvas.toDataURL("image/png");
       link.click();
-    }
-
-    function tryLoadDefaultFrame() {
-      const img = new Image();
-      img.onload = () => {
-        frameImage = img;
-        renderStrip();
-      };
-      img.onerror = () => {
-        frameImage = null;
-        renderStrip();
-      };
-      img.src = "./frame.png?v=" + Date.now();
     }
 
     if ("serviceWorker" in navigator) {
@@ -764,12 +832,17 @@
       });
     }
 
+    frameSelect.addEventListener("click", e => {
+      const btn = e.target.closest("button[data-frame]");
+      if (!btn) return;
+      selectFrame(btn.dataset.frame);
+    });
+
     startBtn.addEventListener("click", startShooting);
     retakeBtn.addEventListener("click", resetAll);
     saveBtn.addEventListener("click", saveImage);
 
-    drawBaseFrame();
-    tryLoadDefaultFrame();
+    loadFrame(selectedFrame);
   </script>
 </body>
 </html>
