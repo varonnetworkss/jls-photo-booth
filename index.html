@@ -476,24 +476,42 @@
     }
 
     async function initCamera() {
-      if (streamStarted) return;
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: "user"
-          },
-          audio: false
-        });
-        video.srcObject = stream;
-        streamStarted = true;
-        cameraStatus.textContent = "카메라 준비 완료";
-      } catch (err) {
-        cameraStatus.textContent = "카메라 권한 필요";
-        alert("카메라 권한을 허용해야 촬영할 수 있어.");
-      }
+  try {
+    cameraStatus.textContent = "카메라 연결 중...";
+
+    if (video.srcObject) {
+      streamStarted = true;
+      await video.play();
+      cameraStatus.textContent = "카메라 준비 완료";
+      return;
     }
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        facingMode: "user"
+      },
+      audio: false
+    });
+
+    video.srcObject = stream;
+
+    await new Promise(resolve => {
+      video.onloadedmetadata = resolve;
+    });
+
+    await video.play();
+
+    streamStarted = true;
+    cameraStatus.textContent = "카메라 준비 완료";
+  } catch (err) {
+    console.error(err);
+    streamStarted = false;
+    cameraStatus.textContent = "카메라 실행 실패";
+    alert("카메라가 안 켜졌어. 브라우저 카메라 권한을 허용하고 새로고침해줘.");
+  }
+}
 
     function roundRect(ctx, x, y, w, h, r, fill, stroke) {
       if (w < 2 * r) r = w / 2;
