@@ -469,8 +469,9 @@
 
       await renderStrip();
       saveBtn.disabled = false; printBtn.disabled = false; startBtn.disabled = false; isShooting = false;
-      cameraStatus.textContent = "촬영 완료";
-      uploadResult(videoBlob);
+cameraStatus.textContent = "촬영 완료";
+showResultScreen();
+uploadResult(videoBlob);
     }
 
     function resetPhotos() {
@@ -510,6 +511,21 @@ function goFullscreen() {
   } else if (el.webkitRequestFullscreen) {
     el.webkitRequestFullscreen();
   }
+}
+    function showResultScreen() {
+  document.getElementById("app").classList.remove("shooting-mode");
+  document.getElementById("app").classList.add("result-mode");
+}
+
+function backToCamera() {
+  document.getElementById("app").classList.remove("result-mode");
+  document.getElementById("app").classList.add("shooting-mode");
+}
+
+function selectFrame(type) {
+  // 일단 버튼 누르면 미리보기 다시 그리기
+  // 나중에 frame-yellow.png 이런 식으로 프레임 파일 여러 개 연결 가능
+  renderStrip();
 }
     drawBaseFrame(stripCtx, true); updateThumbs(); tryLoadDefaultFrame();
   </script>
