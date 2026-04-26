@@ -236,8 +236,8 @@
     const photoLink = document.getElementById("photoLink");
     const videoLink = document.getElementById("videoLink");
 
-    const CANVAS_W = 1200;
-    const CANVAS_H = 1600;
+    const CANVAS_W =  900;
+    const CANVAS_H = 1200;
 
     let photos = [];
     let frameImage = null;
@@ -364,14 +364,18 @@ if (liveSlotIndex >= 0) {
 
       if (frameImage) videoCtx.drawImage(frameImage, 0, 0, CANVAS_W, CANVAS_H);
     }
+let lastFrameTime = 0;
 
-    function startCompositeLoop() {
-      function loop() {
-        drawVideoCompositeFrame();
-        videoAnimationId = requestAnimationFrame(loop);
-      }
-      loop();
+function startCompositeLoop() {
+  function loop(ts) {
+    if (ts - lastFrameTime > 80) { // 약 12fps
+      drawVideoCompositeFrame();
+      lastFrameTime = ts;
     }
+    videoAnimationId = requestAnimationFrame(loop);
+  }
+  videoAnimationId = requestAnimationFrame(loop);
+}
 
     function stopCompositeLoop() {
       if (videoAnimationId) cancelAnimationFrame(videoAnimationId);
@@ -382,7 +386,7 @@ if (liveSlotIndex >= 0) {
       recordedChunks = [];
       if (!window.MediaRecorder || !videoCanvas.captureStream) return;
       try {
-        const canvasStream = videoCanvas.captureStream(30);
+        const canvasStream = videoCanvas.captureStream(15);
         const mimeType = getSupportedMimeType();
         mediaRecorder = new MediaRecorder(canvasStream, mimeType ? { mimeType } : undefined);
         mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
@@ -510,7 +514,8 @@ if (liveSlotIndex >= 0) {
       }
 
     liveSlotIndex = -1;
-await wait(5000);
+liveSlotIndex = -1;
+await wait(2500);
 
 const videoBlob = await stopCompositeRecording();
 stopCompositeLoop();
