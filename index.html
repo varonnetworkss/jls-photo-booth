@@ -388,138 +388,6 @@
         margin: 8mm;
       }
     }
-
-    /* --- 추가된 스타일 --- */
-    .countdown.show {
-      animation: pop .22s ease both, pulse 1s infinite alternate;
-    }
-
-    @keyframes pulse {
-      from { transform: scale(1); opacity: 1; }
-      to { transform: scale(1.05); opacity: 0.9; }
-    }
-
-    .flash.on {
-      animation: flash .28s ease, flash-border .28s ease;
-    }
-
-    @keyframes flash-border {
-      0% { border: 6px solid #111; }
-      35% { border: 6px solid white; }
-      100% { border: 6px solid #111; }
-    }
-
-    .frame-select button {
-      position: relative;
-      overflow: hidden;
-    }
-
-    .frame-select button::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-size: cover;
-      background-position: center;
-      opacity: 0.3;
-      transition: opacity 0.2s ease;
-    }
-
-    .frame-select button.active-frame::before {
-      opacity: 0.6;
-    }
-
-    /* 각 프레임에 대한 배경 이미지 */
-    .frame-select button[data-frame="frame-yellow"]::before {
-      background-image: url('./frame-yellow.png'); /* 실제 이미지 경로로 변경 필요 */
-    }
-    .frame-select button[data-frame="frame-pink-bear"]::before {
-      background-image: url('./frame-pink-bear.png'); /* 실제 이미지 경로로 변경 필요 */
-    }
-    .frame-select button[data-frame="frame-blue-flower"]::before {
-      background-image: url('./frame-blue-flower.png'); /* 실제 이미지 경로로 변경 필요 */
-    }
-    .frame-select button[data-frame="frame-cute-jls"]::before {
-      background-image: url('./frame-cute-jls.png'); /* 실제 이미지 경로로 변경 필요 */
-    }
-    .frame-select button[data-frame="frame-market-day"]::before {
-      background-image: url('./frame-market-day.png'); /* 마켓데이 전용 프레임 이미지 경로 */
-    }
-
-    .frame-select button span {
-      position: relative;
-      z-index: 1;
-    }
-
-    .result-screen .photo-strip {
-      margin-bottom: 10px; /* QR 카드와의 간격 조절 */
-    }
-
-    .qr-card {
-      grid-template-columns: auto 1fr; /* QR 이미지와 텍스트 분리 */
-      align-items: center;
-      gap: 12px;
-      padding: 10px;
-      border-radius: 18px;
-      background: #f8fafc;
-      box-shadow: 0 4px 12px rgba(0,0,0,.08);
-    }
-
-    .qr-text {
-      text-align: left;
-    }
-
-    .qr-text h3 {
-      font-size: 18px;
-      margin-bottom: 3px;
-    }
-
-    .qr-text a {
-      font-size: 14px;
-    }
-
-    .upload-badge.error {
-      background: #fee2e2; /* Red-ish background for error */
-      color: #ef4444; /* Red-ish text for error */
-    }
-
-    .upload-badge.success {
-      background: #dcfce7; /* Green-ish background for success */
-      color: #22c55e; /* Green-ish text for success */
-    }
-
-    /* 마켓데이 테마 색상 */
-    .app {
-      background: linear-gradient(135deg, #FFD700, #FFA500); /* 황금색-주황색 그라데이션 */
-    }
-    .top-title span {
-      background: #FF4500; /* 오렌지 레드 */
-    }
-    .shooting-screen, .result-screen {
-      background: rgba(255,255,255,0.95); /* 약간 더 불투명하게 */
-    }
-    button {
-      background: #FF4500; /* 오렌지 레드 */
-      box-shadow: 0 10px 20px rgba(255,69,0,.24);
-    }
-    button.secondary {
-      background: #fef3c7; /* 밝은 노란색 */
-      color: #FF4500;
-    }
-    .frame-select button.active-frame {
-      background: #FF4500;
-      border-color: #FF4500;
-    }
-    .status {
-      background: rgba(255,69,0,.72);
-    }
-    .countdown {
-      color: #FFD700; /* 황금색 카운트다운 */
-      text-shadow: 0 12px 30px rgba(255,215,0,.5);
-    }
-
   </style>
 </head>
 <body>
@@ -556,26 +424,28 @@
       </div>
 
       <div class="frame-select" id="frameSelect">
-        <button type="button" data-frame="frame-yellow"><span>기본</span></button>
-        <button type="button" data-frame="frame-pink-bear"><span>핑크 곰</span></button>
-        <button type="button" data-frame="frame-blue-flower"><span>블루 꽃</span></button>
-        <button type="button" data-frame="frame-cute-jls"><span>JLS</span></button>
-        <button type="button" data-frame="frame-market-day"><span>마켓데이</span></button>
+        <button type="button" data-frame="frame-yellow" class="active-frame">노랑</button>
+        <button type="button" data-frame="frame-green">초록</button>
+        <button type="button" data-frame="frame-pink-bear">핑크곰</button>
+        <button type="button" data-frame="frame-blue-flower">하늘꽃</button>
+        <button type="button" data-frame="frame-cute-jls">CUTE</button>
       </div>
 
       <div class="strip-wrap">
-        <canvas id="stripCanvas" width="1200" height="1600"></canvas>
+        <div class="photo-strip">
+          <canvas id="stripCanvas" width="1200" height="1600"></canvas>
+        </div>
       </div>
 
       <div class="bottom-area">
-        <div class="qr-card" id="qrCard">
-          <img id="photoQr" src="" alt="QR Code" />
+        <div id="qrCard" class="qr-card">
+          <img id="photoQr" alt="사진 QR" />
           <div class="qr-text">
             <h3>사진 받기</h3>
-            <a id="photoLink" href="#" target="_blank" rel="noopener noreferrer">QR 대기 중</a>
+            <a id="photoLink" href="#" target="_blank" rel="noopener">사진 열기</a>
           </div>
         </div>
-        <p class="guide">프레임은 사진 위에 덮여서 스티커가 살아남고, 좌표는 실제 투명칸 기준으로 맞춤.</p>
+        <div class="guide">프레임은 사진 위에 덮여서 스티커가 살아남고, 좌표는 실제 투명칸 기준으로 맞춤.</div>
       </div>
     </section>
   </div>
@@ -583,22 +453,21 @@
   <canvas id="captureCanvas" class="hidden-canvas"></canvas>
 
   <script>
-    // Cloudinary 설정 (실제 값으로 변경 필요)
-    const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload";
-    const UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
+    const CLOUD_NAME = "dr4ug8q43";
+    const UPLOAD_PRESET = "jls_booth";
+    const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
 
     const video = document.getElementById("video");
-    const shootingScreen = document.getElementById("shootingScreen");
-    const resultScreen = document.getElementById("resultScreen");
+    const startBtn = document.getElementById("startBtn");
+    const retakeBtn = document.getElementById("retakeBtn");
+    const saveBtn = document.getElementById("saveBtn");
+    const goResultBtn = document.getElementById("goResultBtn");
     const countdownEl = document.getElementById("countdown");
     const flashEl = document.getElementById("flash");
     const cameraStatus = document.getElementById("cameraStatus");
-    const startBtn = document.getElementById("startBtn");
-    const retakeBtn = document.getElementById("retakeBtn");
-    const goResultBtn = document.getElementById("goResultBtn");
-    const saveBtn = document.getElementById("saveBtn");
     const uploadStatus = document.getElementById("uploadStatus");
-    const frameSelect = document.getElementById("frameSelect");
+    const shootingScreen = document.getElementById("shootingScreen");
+    const resultScreen = document.getElementById("resultScreen");
     const stripCanvas = document.getElementById("stripCanvas");
     const stripCtx = stripCanvas.getContext("2d");
     const captureCanvas = document.getElementById("captureCanvas");
@@ -606,18 +475,30 @@
     const qrCard = document.getElementById("qrCard");
     const photoQr = document.getElementById("photoQr");
     const photoLink = document.getElementById("photoLink");
+    const frameSelect = document.getElementById("frameSelect");
 
-    const CANVAS_W = stripCanvas.width;
-    const CANVAS_H = stripCanvas.height;
+    const CANVAS_W = 1200;
+    const CANVAS_H = 1600;
 
+    // 실제 업로드된 1200x1600 프레임의 투명칸 기준 좌표
+    // 순서: 위왼쪽 → 위오른쪽 → 아래왼쪽 → 아래오른쪽
     const FRAME_CONFIGS = {
       "frame-yellow": {
         file: "frame-yellow.png",
         slots: [
-          { x: 146, y: 91, w: 443, h: 535 },
-          { x: 626, y: 91, w: 443, h: 535 },
-          { x: 146, y: 681, w: 444, h: 534 },
-          { x: 626, y: 681, w: 444, h: 534 }
+          { x: 215, y: 335, w: 380, h: 490 },
+          { x: 611, y: 335, w: 379, h: 490 },
+          { x: 217, y: 842, w: 379, h: 488 },
+          { x: 612, y: 842, w: 378, h: 488 }
+        ]
+      },
+      "frame-green": {
+        file: "frame-green.png",
+        slots: [
+          { x: 82, y: 136, w: 496, h: 574 },
+          { x: 624, y: 136, w: 494, h: 573 },
+          { x: 82, y: 753, w: 496, h: 573 },
+          { x: 625, y: 752, w: 493, h: 574 }
         ]
       },
       "frame-pink-bear": {
@@ -646,15 +527,6 @@
           { x: 95, y: 621, w: 491, h: 541 },
           { x: 613, y: 621, w: 489, h: 541 }
         ]
-      },
-      "frame-market-day": { // 마켓데이 전용 프레임 추가
-        file: "frame-market-day.png",
-        slots: [
-          { x: 100, y: 100, w: 450, h: 600 },
-          { x: 650, y: 100, w: 450, h: 600 },
-          { x: 100, y: 850, w: 450, h: 600 },
-          { x: 650, y: 850, w: 450, h: 600 }
-        ]
       }
     };
 
@@ -665,8 +537,6 @@
     let streamStarted = false;
     let uploadTimer = null;
     let latestPhotoUrl = "";
-    let retryCount = 0;
-    const MAX_RETRY = 3;
 
     function wait(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
@@ -802,16 +672,6 @@
       } else {
         drawFallbackFrame();
       }
-
-      // 마켓데이 테마: 랜덤 스티커/칭호 추가 (예시)
-      if (selectedFrame === "frame-market-day" && photos.length === 4) {
-        const titles = ["오늘의 마켓 왕", "쇼핑 마스터", "인싸 등극", "핵인싸", "마켓데이 퀸", "마켓데이 킹"];
-        const randomTitle = titles[Math.floor(Math.random() * titles.length)];
-        stripCtx.fillStyle = "#FF4500"; // 오렌지 레드
-        stripCtx.font = "1000 48px Arial";
-        stripCtx.textAlign = "center";
-        stripCtx.fillText(randomTitle, CANVAS_W / 2, CANVAS_H - 50);
-      }
     }
 
     async function showCountdown() {
@@ -866,12 +726,9 @@
     }
 
     async function uploadResult() {
-      uploadStatus.textContent = "업로드 중...";
-      uploadStatus.classList.remove("error", "success");
-      qrCard.classList.remove("show");
-      saveBtn.disabled = true;
-
       try {
+        uploadStatus.textContent = "업로드 중...";
+        qrCard.classList.remove("show");
         await renderStrip();
         const blob = await canvasToBlob(stripCanvas, "image/png", 0.95);
         const url = await uploadToCloudinary(blob, `${selectedFrame}-${Date.now()}.png`);
@@ -882,25 +739,12 @@
         photoLink.textContent = "사진 열기 / 저장";
         qrCard.classList.add("show");
         saveBtn.disabled = false;
-        uploadStatus.textContent = "QR 생성 완료!";
-        uploadStatus.classList.add("success");
-        retryCount = 0; // 성공 시 재시도 횟수 초기화
+        uploadStatus.textContent = "QR 생성 완료";
       } catch (err) {
-        console.error("업로드 실패:", err);
-        uploadStatus.textContent = `업로드 실패 (재시도 ${retryCount}/${MAX_RETRY})`;
-        uploadStatus.classList.add("error");
+        console.error(err);
+        uploadStatus.textContent = "업로드 실패";
         qrCard.classList.remove("show");
         saveBtn.disabled = true;
-
-        if (retryCount < MAX_RETRY) {
-          retryCount++;
-          uploadStatus.textContent = `업로드 실패. ${MAX_RETRY - retryCount}회 재시도 남음...`;
-          setTimeout(uploadResult, 2000); // 2초 후 재시도
-        } else {
-          uploadStatus.textContent = "업로드 실패. 다시 시도해주세요.";
-          alert("사진 업로드에 실패했습니다. 네트워크 연결을 확인하고 다시 시도해주세요.");
-          retryCount = 0; // 재시도 횟수 초기화
-        }
       }
     }
 
@@ -910,7 +754,6 @@
       latestPhotoUrl = "";
       saveBtn.disabled = true;
       uploadStatus.textContent = "QR 다시 생성 중...";
-      uploadStatus.classList.remove("error", "success");
       uploadTimer = setTimeout(uploadResult, 350);
     }
 
@@ -926,10 +769,7 @@
     async function startShooting() {
       if (isShooting) return;
       await initCamera();
-      if (!streamStarted) {
-        cameraStatus.textContent = "카메라 준비 실패. 권한을 확인해주세요.";
-        return;
-      }
+      if (!streamStarted) return;
 
       isShooting = true;
       startBtn.disabled = true;
@@ -938,29 +778,28 @@
       qrCard.classList.remove("show");
       latestPhotoUrl = "";
       uploadStatus.textContent = "QR 대기 중";
-      uploadStatus.classList.remove("error", "success");
       photos = [];
       await renderStrip();
 
       for (let i = 0; i < 4; i++) {
-        cameraStatus.textContent = `${i + 1}번째 컷 준비!`;
+        cameraStatus.textContent = `${i + 1}번째 컷 준비`;
         await showCountdown();
         fireFlash();
         const shot = capturePhoto();
         if (!shot) {
           isShooting = false;
           startBtn.disabled = false;
-          cameraStatus.textContent = "카메라 화면 캡처 실패. 다시 시도해주세요.";
+          cameraStatus.textContent = "카메라 준비 실패";
           alert("카메라 화면이 아직 준비 안 됐어. 다시 눌러줘.");
           return;
         }
         photos.push(shot);
         await renderStrip();
-        cameraStatus.textContent = `${i + 1}번째 컷 완료!`;
+        cameraStatus.textContent = `${i + 1}번째 컷 완료`;
         await wait(620);
       }
 
-      cameraStatus.textContent = "촬영 완료!";
+      cameraStatus.textContent = "촬영 완료";
       isShooting = false;
       startBtn.disabled = false;
       goResultBtn.disabled = false;
@@ -976,13 +815,11 @@
       qrCard.classList.remove("show");
       latestPhotoUrl = "";
       uploadStatus.textContent = "QR 대기 중";
-      uploadStatus.classList.remove("error", "success");
       saveBtn.disabled = true;
       goResultBtn.disabled = true;
       await renderStrip();
       backToCamera();
       cameraStatus.textContent = "촬영 버튼을 눌러 시작";
-      retryCount = 0; // 초기화 시 재시도 횟수 초기화
     }
 
     async function openSaveLink() {
